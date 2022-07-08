@@ -1,7 +1,7 @@
 let theta = 0.5
 
 class Node {
-    constructor(topleft, topRight, bottomRight, bottomLeft, depth) {
+    constructor(topleft, topRight, bottomRight, bottomLeft, depth, applyForce) {
         this.topLeft = topleft // Coordinates of the top left corner
         this.topRight = topRight
         this.bottomLeft = bottomLeft
@@ -11,32 +11,25 @@ class Node {
         this.massCenter = createVector(0, 0)
         this.mass = 0
         this.width = this.topRight.copy().sub(this.topLeft).x / 2
+        this.applyForce = applyForce
     }
 
     calcForces(affectedBody) {
-        // If is a external node 
+        // If the node have no subnodes
         if (!this.bottomLeftNode) {
-            // If has a body and that body is not the affected body
+            // If the node has a body and that body is not the affected body
             if (this.body && affectedBody.index != this.body.index) {
-                if (affectedBody.index == 0) {
-                    let dir = p5.Vector.sub(this.body.pos, affectedBody.pos);
-                    drawArrow(affectedBody.pos, dir, 'red')
-                    // drawArrow(this.body.pos, dir.mult(-1), 'red')
-                }
+                this.applyForce(affectedBody, this.body)
             }
         } else {
+            // The node have sub nodes
             let d = dist(affectedBody.pos.x, affectedBody.pos.y, this.massCenter.x, this.massCenter.y);
             let ratio = this.width / d;
+            // If the node is sufficiently far away 
             if (ratio < theta) {
-                if (affectedBody.index == 0) {
-                    let dir = p5.Vector.sub(this.massCenter, affectedBody.pos);
-                    drawArrow(affectedBody.pos, dir, 'red')
-                    // drawArrow(this.massCenter.pos, dir.mult(-1), 'red')
-                    noFill()
-                    stroke('red')
-                    ellipse(this.massCenter.x, this.massCenter.y, this.mass)
-                }
+                this.applyForce(affectedBody, { pos: this.massCenter, mass: this.mass })
             } else {
+                // The node isn't far away enough, call calForce on all its subnodes
                 this.topRightNode.calcForces(affectedBody);
                 this.topLeftNode.calcForces(affectedBody);
                 this.bottomRightNode.calcForces(affectedBody);
@@ -78,9 +71,7 @@ class Node {
 
 
     addBody(newBody) {
-
         this.updateMassCenter(newBody)
-
         // If a body is present in the node
         if (this.body) {
             // Subdivide the node into 4 quadrants (4 sub nodes)
@@ -90,7 +81,8 @@ class Node {
                 this.topRight.copy().add(this.topLeft).div(2),
                 this.center,
                 this.bottomLeft.copy().add(this.topLeft).div(2),
-                this.depth + 1
+                this.depth + 1,
+                this.applyForce
             )
             // TOP RIGHT
             this.topRightNode = new Node(
@@ -98,7 +90,8 @@ class Node {
                 this.topRight.copy(),
                 this.bottomRight.copy().add(this.topRight).div(2),
                 this.center,
-                this.depth + 1
+                this.depth + 1,
+                this.applyForce
             )
             // BOTTOM RIGHT
             this.bottomRightNode = new Node(
@@ -106,7 +99,8 @@ class Node {
                 this.bottomRight.copy().add(this.topRight).div(2),
                 this.bottomRight.copy(),
                 this.bottomRight.copy().add(this.bottomLeft).div(2),
-                this.depth + 1
+                this.depth + 1,
+                this.applyForce
             )
             // BOTTOM LEFT
             this.bottomLeftNode = new Node(
@@ -114,7 +108,8 @@ class Node {
                 this.center,
                 this.bottomRight.copy().add(this.bottomLeft).div(2),
                 this.bottomLeft.copy(),
-                this.depth + 1
+                this.depth + 1,
+                this.applyForce
             )
             // Place the new body in the correct subnode that we just created
             this.distributeBody(newBody)
@@ -147,19 +142,4 @@ class Node {
         // ... BOTTOM LEFT subnode
         if (body.pos.x < this.center.x && body.pos.y > this.center.y) this.bottomLeftNode.addBody(body)
     }
-}
-
-
-function drawArrow(base, vec, myColor) {
-    push();
-    stroke(myColor);
-    strokeWeight(3);
-    fill(myColor);
-    translate(base.x, base.y);
-    line(0, 0, vec.x, vec.y);
-    rotate(vec.heading());
-    let arrowSize = 7;
-    translate(vec.mag() - arrowSize, 0);
-    triangle(0, arrowSize / 2, 0, -arrowSize / 2, arrowSize, 0);
-    pop();
 }
