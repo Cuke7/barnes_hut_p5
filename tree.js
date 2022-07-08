@@ -1,3 +1,5 @@
+let depthDebug = 1
+
 
 class Node {
     constructor(topleft, topRight, bottomRight, bottomLeft, depth) {
@@ -7,6 +9,16 @@ class Node {
         this.bottomRight = bottomRight
         this.depth = depth
         this.center = this.topRight.copy().add(this.bottomLeft).div(2) // center of the node
+        this.massCenter = createVector(0, 0)
+        this.mass = 0
+    }
+
+    updateMassCenter(newBody) {
+        let m = newBody.mass
+        let pos = newBody.pos.copy()
+        let wPos = pos.mult(m)
+        this.massCenter.mult(this.mass).add(wPos).div(this.mass + m)
+        this.mass += newBody.mass
     }
 
 
@@ -16,6 +28,15 @@ class Node {
         stroke('red')
         // If the node has NO subnodes
         if (!this.bottomLeftNode) text(this.depth, this.topRight.x - 15, this.topRight.y + 15)
+
+        if (this.depth == depthDebug) {
+            noFill()
+            stroke('red')
+            ellipse(this.massCenter.x, this.massCenter.y, this.mass)
+            fill('red')
+            text(this.depth, this.massCenter.x, this.massCenter.y)
+        }
+
 
         // If the node has subnodes, draw them and tell them to draw their eventual subnodes
         if (this.topRightNode) {
@@ -39,6 +60,9 @@ class Node {
 
 
     addBody(newBody) {
+
+        this.updateMassCenter(newBody)
+
         // If a body is present in the node
         if (this.body) {
             // Subdivide the node into 4 quadrants (4 sub nodes)

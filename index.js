@@ -2,7 +2,7 @@ let planets = []
 let tree;
 let canvaWidth = 1000
 let canvaHeight = 800
-let nBody = 50
+let nBody = 5
 
 function setup() {
     // P5 configuration
@@ -21,10 +21,11 @@ function setup() {
 
 function draw() {
     background(0)
-
     // Create a new tree where the 4 corners are the 4 corners of the canvas
     tree = new Node(createVector(0, 0), createVector(canvaWidth, 0), createVector(canvaWidth, canvaHeight), createVector(0, canvaHeight), 0)
-
+    for (const planet of planets) {
+        planet.update()
+    }
     // Add each body/planet to the tree
     for (const planet of planets) {
         tree.addBody(planet)
