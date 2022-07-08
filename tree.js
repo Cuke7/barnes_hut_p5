@@ -1,5 +1,4 @@
-let depthDebug = 1
-
+let theta = 0.5
 
 class Node {
     constructor(topleft, topRight, bottomRight, bottomLeft, depth) {
@@ -11,6 +10,39 @@ class Node {
         this.center = this.topRight.copy().add(this.bottomLeft).div(2) // center of the node
         this.massCenter = createVector(0, 0)
         this.mass = 0
+        this.width = this.topRight.copy().sub(this.topLeft).x / 2
+    }
+
+    calcForces(affectedBody) {
+        // If is a external node 
+        if (!this.bottomLeftNode) {
+            // If has a body and that body is not the affected body
+            if (this.body && affectedBody.index != this.body.index) {
+                if (affectedBody.index == 0) {
+                    let dir = p5.Vector.sub(this.body.pos, affectedBody.pos);
+                    drawArrow(affectedBody.pos, dir, 'red')
+                    // drawArrow(this.body.pos, dir.mult(-1), 'red')
+                }
+            }
+        } else {
+            let d = dist(affectedBody.pos.x, affectedBody.pos.y, this.massCenter.x, this.massCenter.y);
+            let ratio = this.width / d;
+            if (ratio < theta) {
+                if (affectedBody.index == 0) {
+                    let dir = p5.Vector.sub(this.massCenter, affectedBody.pos);
+                    drawArrow(affectedBody.pos, dir, 'red')
+                    // drawArrow(this.massCenter.pos, dir.mult(-1), 'red')
+                    noFill()
+                    stroke('red')
+                    ellipse(this.massCenter.x, this.massCenter.y, this.mass)
+                }
+            } else {
+                this.topRightNode.calcForces(affectedBody);
+                this.topLeftNode.calcForces(affectedBody);
+                this.bottomRightNode.calcForces(affectedBody);
+                this.bottomLeftNode.calcForces(affectedBody);
+            }
+        }
     }
 
     updateMassCenter(newBody) {
@@ -29,15 +61,6 @@ class Node {
         // If the node has NO subnodes
         if (!this.bottomLeftNode) text(this.depth, this.topRight.x - 15, this.topRight.y + 15)
 
-        if (this.depth == depthDebug) {
-            noFill()
-            stroke('red')
-            ellipse(this.massCenter.x, this.massCenter.y, this.mass)
-            fill('red')
-            text(this.depth, this.massCenter.x, this.massCenter.y)
-        }
-
-
         // If the node has subnodes, draw them and tell them to draw their eventual subnodes
         if (this.topRightNode) {
             noFill();
@@ -50,11 +73,6 @@ class Node {
             this.topLeftNode.draw();
             this.bottomRightNode.draw();
             this.bottomLeftNode.draw();
-        }
-
-        // If there is a body the node, draw it
-        if (this.body) {
-            this.body.draw()
         }
     }
 
@@ -129,4 +147,19 @@ class Node {
         // ... BOTTOM LEFT subnode
         if (body.pos.x < this.center.x && body.pos.y > this.center.y) this.bottomLeftNode.addBody(body)
     }
+}
+
+
+function drawArrow(base, vec, myColor) {
+    push();
+    stroke(myColor);
+    strokeWeight(3);
+    fill(myColor);
+    translate(base.x, base.y);
+    line(0, 0, vec.x, vec.y);
+    rotate(vec.heading());
+    let arrowSize = 7;
+    translate(vec.mag() - arrowSize, 0);
+    triangle(0, arrowSize / 2, 0, -arrowSize / 2, arrowSize, 0);
+    pop();
 }
